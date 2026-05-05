@@ -61,6 +61,27 @@ export default function Home() {
       <div className="page-header">
         <h2>Xin chào,</h2>
         <p>Hôm nay bạn muốn nghe tiếp truyện gì?</p>
+        
+        <div style={{marginTop: '30px', padding: '15px', background: '#fff5eb', borderRadius: '12px', border: '1px dashed #ff7e00'}}>
+          <label style={{fontSize: '12px', color: '#ff7e00', fontWeight: 'bold', display: 'block', marginBottom: '5px'}}>
+            Sửa lỗi kết nối (Nếu không tải được truyện)
+          </label>
+          <input 
+            type="text" 
+            placeholder="Dán link Render tại đây: https://..." 
+            defaultValue={localStorage.getItem('custom_api_url') || ''}
+            style={{width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '12px'}}
+            onBlur={(e) => {
+              const val = e.target.value.trim();
+              if (val) {
+                localStorage.setItem('custom_api_url', val);
+                alert('Đã lưu địa chỉ Server. Hãy thử tìm truyện lại nhé!');
+                window.location.reload();
+              }
+            }}
+          />
+        </div>
+
         <div style={{marginTop: 16, display: 'flex', alignItems: 'center', background: 'var(--bg-color)', borderRadius: 12, padding: '10px 14px', border: '1px solid var(--border-color)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'}}>
           <Search size={18} color="var(--text-secondary)" style={{marginRight: 10}}/>
           <input 
