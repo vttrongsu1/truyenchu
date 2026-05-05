@@ -1,0 +1,166 @@
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const cheerio = require('cheerio');
+
+const app = express();
+const PORT = 3001;
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/api/scrape', async (req, res) => {
+  const { url } = req.query;
+
+  if (!url) {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  try {
+    console.log(`Scraping: ${url}`);
+    
+    // Giả lập user-agent để không bị chặn
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    const html = response.data;
+    const $ = cheerio.select ? cheerio.load(html) : cheerio.load(html); // Cheerio load
+
+    // Trích xuất dữ liệu từ TruyenFull
+    // Cấu trúc TruyenFull:
+    // Tiêu đề truyện: h1 hoặc .truyen-title
+    // Tên chương: h2, .chapter-title
+    // Nội dung: div.chapter-c hoặc div#chapter-c
+    
+    const storyTitle = $('a.truyen-title').text().trim() || $('h1').text().trim();
+    const chapterTitle = $('.chapter-title').text().trim() || $('h2').text().trim();
+    
+    // Nội dung chương
+    let contentHtml = $('.chapter-c').html() || $('#chapter-c').html();
+    
+    if (!contentHtml) {
+      return res.status(404).json({ error: 'Không tìm thấy nội dung truyện. Có thể cấu trúc web đã đổi hoặc bị chặn.' });
+    }
+
+    // Xóa bớt các quảng cáo, iframe, script
+    const content$ = cheerio.load(contentHtml);
+    content$('script, iframe, ins, .ads, div[id^="ads"]').remove();
+    
+    // Chuyển <br> thành \n, p thành \n\n
+    content$('br').replaceWith('\n');
+    content$('p').each(function() {
+      const pText = content$(this).text();
+      content$(this).replaceWith(pText + '\n\n');
+    });
+
+    let plainText = content$.text().trim();
+    
+    // Chuẩn hóa khoảng trắng
+    plainText = plainText.replace(/\n\s*\n/g, '\n\n');
+
+    res.json({
+      success: true,
+      data: {
+        storyTitle,
+        chapterTitle,
+        content: plainText,
+        source: url
+      }
+    });
+
+  } catch (error) {
+    console.error('Lỗi khi scrape chương:', error.message);
+    res.status(500).json({ error: 'Không thể cào dữ liệu từ URL này.', details: error.message });
+  }
+});
+
+// API lấy thông tin truyện và danh sách chương
+app.get('/api/story', async (req, res) => {
+  let { url } = req.query;
+  
+  if (!url) {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  // Đảm bảo URL kết thúc bằng / để tránh lỗi redirect
+  if (!url.endsWith('/')) {
+    url += '/';
+  }
+
+  try {
+    console.log(`Scraping Story Info: ${url}`);
+    
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    const html = response.data;
+    const $ = cheerio.select ? cheerio.load(html) : cheerio.load(html);
+
+    // 1. Lấy thông tin cơ bản và trang đầu tiên
+    const title = $('h3.title').text().trim() || $('h1').text().trim();
+    const author = $('.info a[itemprop="author"]').text().trim() || 'Chưa rõ';
+    const cover = $('.book img').attr('src') || '';
+    const desc = $('.desc-text').text().trim();
+
+    // 2. Lấy danh sách chương trang 1
+    const chapters = [];
+    const seenUrls = new Set();
+    
+    const extractChapters = (htmlContent) => {
+      const $page = cheerio.load(htmlContent);
+      $page('.col-truyen-main ul.list-chapter li a').each((i, el) => {
+        const cUrl = $page(el).attr('href');
+        const cTitle = $page(el).text().trim();
+        if (cUrl && !seenUrls.has(cUrl)) {
+          seenUrls.add(cUrl);
+          chapters.push({ title: cTitle, url: cUrl });
+        }
+      });
+    };
+
+    extractChapters(html);
+
+    // 3. Tìm các trang tiếp theo (Pagination)
+    // TruyenFull dùng cấu trúc pagination hoặc link /trang-2/, /trang-3/...
+    const lastPageLink = $('ul.pagination li:not(.next) a').last().attr('href');
+    if (lastPageLink && lastPageLink.includes('trang-')) {
+      const match = lastPageLink.match(/trang-(\d+)/);
+      if (match) {
+        const totalPages = parseInt(match[1]);
+        console.log(`Phát hiện ${totalPages} trang chương. Đang lấy dữ liệu...`);
+        
+        // Giới hạn để tránh bị chặn hoặc quá tải (ví dụ max 20 trang = 1000 chương)
+        const limit = Math.min(totalPages, 50); 
+        
+        for (let p = 2; p <= limit; p++) {
+          const pageUrl = url.replace(/\/$/, '') + `/trang-${p}/`;
+          try {
+            const pRes = await axios.get(pageUrl, { headers: { 'User-Agent': 'Mozilla/5.0...' } });
+            extractChapters(pRes.data);
+          } catch (err) {
+            console.error(`Lỗi tải trang ${p}:`, err.message);
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: { title, author, cover, desc, chapters, source: url }
+    });
+
+  } catch (error) {
+    console.error('Lỗi khi scrape truyện:', error.message);
+    res.status(500).json({ error: 'Không thể cào thông tin truyện từ URL này.', details: error.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Backend Scraper đang chạy tại http://localhost:${PORT}`);
+});

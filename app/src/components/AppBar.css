@@ -1,0 +1,37 @@
+.app-bar {
+  background-color: var(--header-bg);
+  height: 56px;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.brand-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+}
+
+.app-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.icon-btn:hover, .icon-btn:active {
+  background-color: var(--border-color);
+  color: var(--primary);
+}

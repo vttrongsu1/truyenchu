@@ -1,0 +1,109 @@
+.home-page {
+  padding: 20px 16px 24px;
+}
+
+.page-header {
+  margin-bottom: 32px;
+  padding-top: 10px;
+}
+
+.page-header h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.page-header p {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.section-header {
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-card {
+  display: flex;
+  background-color: var(--header-bg);
+  border-radius: 12px;
+  padding: 12px;
+  gap: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.history-card:active {
+  transform: scale(0.98);
+}
+
+.history-cover {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-info .story-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.history-info .story-author {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.mini-progress-bg {
+  height: 4px;
+  background-color: var(--border-color);
+  border-radius: 2px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background-color: var(--primary);
+  border-radius: 2px;
+}
+
+.history-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.play-circle-btn {
+  background-color: var(--primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  box-shadow: 0 2px 6px rgba(240, 129, 15, 0.4);
+}

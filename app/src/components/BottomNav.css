@@ -1,0 +1,48 @@
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--nav-bg);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  flex: 1;
+  height: 100%;
+}
+
+.nav-item.active {
+  color: var(--primary);
+}
+
+.play-btn {
+  background-color: var(--primary);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -24px; /* Pop out effect */
+  box-shadow: 0 4px 10px rgba(240, 129, 15, 0.4);
+  border: 4px solid var(--surface-color);
+}
+
+.nav-item.active .play-btn {
+  background-color: var(--primary-light);
+}
