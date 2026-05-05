@@ -4,7 +4,8 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 const app = express();
-const PORT = 3001;
+app.use(cors()); // Cho phép mọi nguồn truy cập (Cần thiết khi chạy trên Render)
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
