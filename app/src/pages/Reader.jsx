@@ -7,8 +7,13 @@ import './Reader.css';
 
 let API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
 if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
+
+// Sửa lỗi Mixed Content: Nếu trang web là https thì API cũng phải là https
+if (window.location.protocol === 'https:' && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
+  API_URL = API_URL.replace('http://', 'https://');
+}
+
 console.log("Đang kết nối tới Server tại:", API_URL);
-console.log("API URL:", API_URL);
 
 export default function Reader() {
   const navigate = useNavigate();
