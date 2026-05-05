@@ -5,10 +5,9 @@ import localforage from 'localforage';
 import { useDownload } from '../context/DownloadContext';
 import './Reader.css';
 
-let API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
 if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 
-// Sửa lỗi Mixed Content: Nếu trang web là https thì API cũng phải là https
 if (window.location.protocol === 'https:' && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
   API_URL = API_URL.replace('http://', 'https://');
 }
@@ -467,6 +466,28 @@ export default function Reader() {
             <div className="sheet-group">
               <label>Tông giọng (Pitch): {pitch}x</label>
               <input type="range" min="0.5" max="2" step="0.1" value={pitch} onChange={e => setPitch(parseFloat(e.target.value))} className="sheet-slider" />
+            </div>
+
+            <div className="sheet-group" style={{marginTop: 20, paddingTop: 20, borderTop: '1px solid #eee'}}>
+              <label style={{color: '#ff7e00', fontWeight: 'bold'}}>Cấu hình Server (Dành cho sửa lỗi)</label>
+              <p style={{fontSize: '11px', color: '#666', marginBottom: '8px'}}>Dán link Backend từ Render vào đây nếu bị lỗi kết nối.</p>
+              <div className="flex-gap">
+                <input 
+                  type="text" 
+                  placeholder="https://..." 
+                  className="sheet-input" 
+                  defaultValue={localStorage.getItem('custom_api_url') || ''}
+                  style={{flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '13px'}}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim();
+                    if (val) {
+                      localStorage.setItem('custom_api_url', val);
+                      alert('Đã lưu địa chỉ Server mới. Vui lòng tải lại trang để áp dụng!');
+                      window.location.reload();
+                    }
+                  }}
+                />
+              </div>
             </div>
             <div className="sheet-group">
               <label>Hẹn giờ tắt: {sleepTimer > 0 ? formatTimer(sleepTimer) : 'Đang tắt'}</label>
