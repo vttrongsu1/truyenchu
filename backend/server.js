@@ -4,11 +4,16 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 const app = express();
-app.use(cors()); // Cho phép mọi nguồn truy cập (Cần thiết khi chạy trên Render)
-const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// Cấu hình CORS chi tiết để chắc chắn không bị chặn
+app.use(cors({
+  origin: '*', // Cho phép mọi trang web truy cập
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
+const PORT = process.env.PORT || 3001;
 
 app.get('/api/scrape', async (req, res) => {
   const { url } = req.query;
