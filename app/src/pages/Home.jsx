@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import localforage from 'localforage';
 import './Home.css';
 
-const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+let API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 
 export default function Home() {
   const navigate = useNavigate();

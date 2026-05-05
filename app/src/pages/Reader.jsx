@@ -5,7 +5,8 @@ import localforage from 'localforage';
 import { useDownload } from '../context/DownloadContext';
 import './Reader.css';
 
-const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+let API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1); // Xóa dấu / ở cuối nếu có
 
 export default function Reader() {
   const navigate = useNavigate();
