@@ -28,9 +28,14 @@ app.get('/api/scrape', async (req, res) => {
     // Giả lập user-agent để không bị chặn
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (khtml, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Referer': 'https://www.google.com/'
+      },
+      timeout: 10000
     });
+
+    console.log(`Tải nội dung chương thành công.`);
 
     const html = response.data;
     const $ = cheerio.select ? cheerio.load(html) : cheerio.load(html); // Cheerio load
@@ -101,9 +106,15 @@ app.get('/api/story', async (req, res) => {
     
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (khtml, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Referer': 'https://www.google.com/'
+      },
+      timeout: 10000 // Chờ tối đa 10 giây
     });
+
+    console.log(`Tải HTML thành công, bắt đầu xử lý...`);
 
     const html = response.data;
     const $ = cheerio.select ? cheerio.load(html) : cheerio.load(html);
