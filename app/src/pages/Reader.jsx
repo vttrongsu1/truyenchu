@@ -162,14 +162,13 @@ export default function Reader() {
 
     try {
       let data = null;
-      if (storyInfo.isOffline && storyInfo.chaptersData && storyInfo.chaptersData[index]) {
+      if (storyInfo.chaptersData && storyInfo.chaptersData[index]) {
         data = storyInfo.chaptersData[index];
       } else {
-        const cUrl = storyInfo.chapters[index].url;
-        const res = await fetch(`${API_URL}/api/scrape?url=${encodeURIComponent(cUrl)}`);
-        const result = await res.json();
-        if (result.success) data = result.data;
-        else throw new Error(result.error || 'Lỗi server');
+        // Chế độ Offline-first: Không tự động fetch từ API nếu chưa tải về
+        setChapterContent(null);
+        setLoading(false);
+        return;
       }
       
       if (data && data.content) {
@@ -362,6 +361,27 @@ export default function Reader() {
                 {storyInfo.chapters.map((c, i) => <div key={i} className="preview-chap-item" onClick={() => loadChapter(i)}>{c.title}</div>)}
               </div>
             </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="reader-loading" style={{textAlign:'center', padding:'50px 20px'}}>
+            <Loader className="spin" size={40} />
+            <p>Đang tải chương...</p>
+          </div>
+        )}
+
+        {!loading && !chapterContent && storyInfo && (
+          <div className="reader-empty" style={{textAlign:'center', padding:'50px 20px'}}>
+            <div style={{marginBottom:20, color:'#ff7e00'}}>
+              <Download size={64} strokeWidth={1} />
+            </div>
+            <h2>Chương này chưa tải</h2>
+            <p style={{color:'#666', marginBottom:20}}>Vui lòng tải truyện về máy để đọc Offline.</p>
+            <button className="download-prompt-btn" onClick={() => startGlobalDownload(storyInfo)} 
+              style={{background:'#ff7e00', color:'#fff', border:'none', padding:'12px 24px', borderRadius:'12px', display:'flex', alignItems:'center', gap:'10px', margin:'0 auto'}}>
+              <Download size={20} /> Tải toàn bộ truyện ngay
+            </button>
           </div>
         )}
 
