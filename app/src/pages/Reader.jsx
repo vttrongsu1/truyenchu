@@ -336,9 +336,9 @@ export default function Reader() {
         {!storyInfo && !chapterContent && (
           <div className="mtc-fetch-container">
             <div className="mtc-fetch-card">
-              <h3>Dán link từ TruyenFull</h3>
+              <h3>Dán link truyện (TruyenFull, TangThuVien...)</h3>
               <div className="mtc-search-bar flex-between">
-                <input type="text" placeholder="https://truyenfull.vn/..." value={url} onChange={e => setUrl(e.target.value)} />
+                <input type="text" placeholder="https://..." value={url} onChange={e => setUrl(e.target.value)} />
                 <button onClick={fetchUrl} disabled={loading}>{loading ? '...' : <Search size={20}/>}</button>
               </div>
               {error && <p className="error-msg">{error}</p>}
