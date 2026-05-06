@@ -184,7 +184,7 @@ const frontendPath = path.join(__dirname, '../app/dist');
 app.use(express.static(frontendPath));
 
 // Any route that doesn't match an API route will serve the React index.html
-app.get('*', (req, res) => {
+app.get(/(.*)/, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
