@@ -66,9 +66,16 @@ const frontendPath = path.join(__dirname, '../app/dist');
 app.use(express.static(frontendPath));
 
 // Any route that doesn't match an API route will serve the React index.html
-app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, '../app/dist/index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error("Error sending index.html:", err.message);
+      res.status(404).send("Giao diện (Front-end) chưa được build hoặc không tìm thấy. Vui lòng kiểm tra lại quá trình deploy.");
+    }
+  });
 });
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend Scraper đang chạy tại http://localhost:${PORT}`);
