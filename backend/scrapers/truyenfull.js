@@ -65,17 +65,18 @@ async function getStoryInfo(url) {
   if (totalPages > 1) {
     console.log(`[TruyenFull] Phát hiện ${totalPages} trang chương. Đang lấy dữ liệu...`);
     const limit = Math.min(totalPages, 50); 
+    const baseUrl = url.split('?')[0].replace(/\/$/, '');
     for (let p = 2; p <= limit; p++) {
-      const pageUrl = url.replace(/\/$/, '') + `/trang-${p}/`;
+      const pageUrl = `${baseUrl}/trang-${p}/`;
       try {
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 1000)); // Tăng lên 1s cho chắc chắn không bị chặn
         const pRes = await axios.get(pageUrl, { 
           headers: { 
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (khtml, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Referer': 'https://www.google.com/'
+            'Referer': baseUrl
           },
-          timeout: 10000 
+          timeout: 15000 
         });
         extractChapters(pRes.data);
       } catch (err) {

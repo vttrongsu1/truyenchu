@@ -62,9 +62,19 @@ export default function Reader() {
   // 2. Khởi tạo danh sách giọng đọc
   useEffect(() => {
     const loadVoices = () => {
-      const v = synth.getVoices().filter(v => v.lang.toLowerCase().includes('vi'));
-      setVoices(v.length > 0 ? v : synth.getVoices());
-      if (!selectedVoice && v.length > 0) setSelectedVoice(v[0].name);
+      const allVoices = synth.getVoices();
+      const v = allVoices.filter(v => v.lang.toLowerCase().includes('vi'));
+      setVoices(v.length > 0 ? v : allVoices);
+      
+      // Ưu tiên chọn giọng người dùng yêu cầu hoặc giọng Việt đầu tiên
+      if (!selectedVoice && v.length > 0) {
+        const preferredVoice = v.find(voice => voice.name === 'vi-vn-x-gft-local');
+        if (preferredVoice) {
+          setSelectedVoice(preferredVoice.name);
+        } else {
+          setSelectedVoice(v[0].name);
+        }
+      }
     };
     loadVoices();
     synth.onvoiceschanged = loadVoices;
