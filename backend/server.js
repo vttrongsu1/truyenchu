@@ -145,13 +145,28 @@ app.get('/api/story', async (req, res) => {
     extractChapters(html);
 
     // 3. Tìm các trang tiếp theo (Pagination)
-    // TruyenFull dùng cấu trúc pagination hoặc link /trang-2/, /trang-3/...
-    const lastPageLink = $('ul.pagination li:not(.next) a').last().attr('href');
-    if (lastPageLink && lastPageLink.includes('trang-')) {
-      const match = lastPageLink.match(/trang-(\d+)/);
-      if (match) {
-        const totalPages = parseInt(match[1]);
-        console.log(`Phát hiện ${totalPages} trang chương. Đang lấy dữ liệu...`);
+    let totalPages = 1;
+    
+    // Thử lấy từ input ẩn (thường có trên giao diện mới)
+    const hiddenTotal = $('#total-page').val();
+    if (hiddenTotal) {
+      totalPages = parseInt(hiddenTotal);
+    } else {
+      // Giao diện Desktop
+      const lastPageLink = $('ul.pagination li:not(.next) a').last().attr('href');
+      if (lastPageLink && lastPageLink.match(/trang-(\d+)/)) {
+        totalPages = parseInt(lastPageLink.match(/trang-(\d+)/)[1]);
+      } else {
+        // Giao diện Mobile (Dropdown hoặc Danh sách)
+        const selectText = $('select.form-control option').last().text() || '';
+        if (selectText.match(/Trang (\d+)/i)) {
+          totalPages = parseInt(selectText.match(/Trang (\d+)/i)[1]);
+        }
+      }
+    }
+
+    if (totalPages > 1) {
+      console.log(`Phát hiện ${totalPages} trang chương. Đang lấy dữ liệu...`);
         
         // Giới hạn để tránh bị chặn hoặc quá tải (ví dụ max 20 trang = 1000 chương)
         const limit = Math.min(totalPages, 50); 
