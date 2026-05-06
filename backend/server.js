@@ -159,7 +159,15 @@ app.get('/api/story', async (req, res) => {
         for (let p = 2; p <= limit; p++) {
           const pageUrl = url.replace(/\/$/, '') + `/trang-${p}/`;
           try {
-            const pRes = await axios.get(pageUrl, { headers: { 'User-Agent': 'Mozilla/5.0...' } });
+            await new Promise(r => setTimeout(r, 500)); // Delay 500ms để tránh bị chặn
+            const pRes = await axios.get(pageUrl, { 
+              headers: { 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml',
+                'Referer': 'https://www.google.com/'
+              },
+              timeout: 10000 
+            });
             extractChapters(pRes.data);
           } catch (err) {
             console.error(`Lỗi tải trang ${p}:`, err.message);
