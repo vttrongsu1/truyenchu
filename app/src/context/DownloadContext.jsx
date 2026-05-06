@@ -1,6 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import localforage from 'localforage';
 
+let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `${window.location.protocol}//${window.location.hostname}:3001` : window.location.origin);
+if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
+
+if (window.location.protocol === 'https:' && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
+  API_URL = API_URL.replace('http://', 'https://');
+}
+
 const DownloadContext = createContext();
 
 export const useDownload = () => useContext(DownloadContext);
@@ -40,7 +47,7 @@ export const DownloadProvider = ({ children }) => {
     for (let i = 0; i < total; i++) {
       setDownloadingStory({ ...storyInfo, currentIdx: i + 1, total });
       try {
-        const res = await fetch(`http://${window.location.hostname}:3001/api/scrape?url=${encodeURIComponent(storyInfo.chapters[i].url)}`);
+        const res = await fetch(`${API_URL}/api/scrape?url=${encodeURIComponent(storyInfo.chapters[i].url)}`);
         const result = await res.json();
         if (result.success && result.data) {
           offlineStory.chaptersData.push(result.data);
