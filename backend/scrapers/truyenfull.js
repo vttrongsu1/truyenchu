@@ -1,7 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-const domain = 'truyenfull.vn';
+const domain = 'truyenfull'; // Nhận diện mọi biến thể truyenfull.vn, .vision, .com...
 
 async function getStoryInfo(url) {
   // Đảm bảo URL kết thúc bằng / để tránh lỗi redirect
@@ -71,8 +71,8 @@ async function getStoryInfo(url) {
         await new Promise(r => setTimeout(r, 500));
         const pRes = await axios.get(pageUrl, { 
           headers: { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'text/html,application/xhtml+xml',
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (khtml, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Referer': 'https://www.google.com/'
           },
           timeout: 10000 
