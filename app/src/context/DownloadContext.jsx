@@ -125,6 +125,7 @@ export const DownloadProvider = ({ children }) => {
   };
 
   const startGlobalDownload = (storyInfo, range = null) => {
+    console.log("Adding to queue:", storyInfo.title, range);
     const isInQueue = queue.some(j => j.storyInfo.title === storyInfo.title);
     if (isInQueue) return alert('Truyện này đã có trong hàng đợi!');
 
@@ -137,8 +138,13 @@ export const DownloadProvider = ({ children }) => {
       currentIdx: 0,
       total: storyInfo.chapters.length
     };
-    setQueue(prev => [...prev, newJob]);
+    setQueue(prev => {
+      const newQueue = [...prev, newJob];
+      console.log("New Queue:", newQueue);
+      return newQueue;
+    });
   };
+
 
   const cancelDownload = (jobId = null) => {
     const activeJob = queue.find(j => j.status === 'downloading');
