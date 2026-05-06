@@ -9,9 +9,14 @@ const DownloadContext = createContext();
 export const useDownload = () => useContext(DownloadContext);
 
 export const DownloadProvider = ({ children }) => {
-  const [downloadingStory, setDownloadingStory] = useState(null);
-  const [progress, setProgress] = useState(0);
+  const [queue, setQueue] = useState([]); // { id, storyInfo, range, status, progress, currentIdx, total }
+  const [isProcessing, setIsProcessing] = useState(false);
   const cancelRef = useRef(false);
+
+  // Lấy truyện đang tải đầu tiên trong hàng đợi để hiển thị (tương thích ngược)
+  const activeJob = queue.find(j => j.status === 'downloading');
+  const downloadingStory = activeJob ? { ...activeJob.storyInfo, currentIdx: activeJob.currentIdx, total: activeJob.total } : null;
+  const progress = activeJob ? activeJob.progress : 0;
 
   useEffect(() => {
     if ("Notification" in window) {
@@ -25,95 +30,132 @@ export const DownloadProvider = ({ children }) => {
     }
   };
 
-  const startGlobalDownload = async (storyInfo, range = null) => {
-    if (downloadingStory) return alert('Đang có truyện khác đang tải!');
+  // Logic xử lý hàng đợi
+  useEffect(() => {
+    const processNext = async () => {
+      if (isProcessing) return;
+      const nextJob = queue.find(j => j.status === 'pending');
+      if (!nextJob) return;
+
+      setIsProcessing(true);
+      await runDownload(nextJob);
+      setIsProcessing(false);
+    };
+    processNext();
+  }, [queue, isProcessing]);
+
+  const runDownload = async (job) => {
+    const { storyInfo, range, id } = job;
     
-    setDownloadingStory(storyInfo);
-    setProgress(0);
+    // Cập nhật trạng thái thành đang tải
+    setQueue(prev => prev.map(j => j.id === id ? { ...j, status: 'downloading' } : j));
+    
     sendNotification('Bắt đầu tải', `Đang tải truyện: ${storyInfo.title}`);
 
-    // Lấy truyện cũ từ thư viện nếu có để tải bổ sung
-    const library = await localforage.getItem('library') || [];
-    const storyKey = storyInfo.source || storyInfo.title;
-    const existingStoryIdx = library.findIndex(s => (s.source === storyKey || s.title === storyKey));
-    
-    let offlineStory;
-    if (existingStoryIdx > -1) {
-      offlineStory = { ...library[existingStoryIdx], ...storyInfo, isOffline: true };
-      if (!offlineStory.chaptersData) offlineStory.chaptersData = [];
-    } else {
-      offlineStory = {
-        ...storyInfo,
-        id: storyInfo.source || storyInfo.id || Date.now().toString(),
-        chaptersData: [],
-        isOffline: true
-      };
-    }
-
-    const startIdx = range ? Math.max(0, range.from - 1) : 0;
-    const endIdx = range ? Math.min(storyInfo.chapters.length, range.to) : storyInfo.chapters.length;
-    const totalToDownload = endIdx - startIdx;
-    
-    cancelRef.current = false;
-    let downloadedCount = 0;
-
-    for (let i = startIdx; i < endIdx; i++) {
-      if (cancelRef.current) break;
-      // ...
-
-      // Cập nhật trạng thái hiển thị
-      setDownloadingStory({ ...storyInfo, currentIdx: i + 1, total: storyInfo.chapters.length });
+    try {
+      const library = await localforage.getItem('library') || [];
+      const storyKey = storyInfo.source || storyInfo.title;
+      const existingStoryIdx = library.findIndex(s => (s.source === storyKey || s.title === storyKey));
       
-      try {
+      let offlineStory;
+      if (existingStoryIdx > -1) {
+        offlineStory = { ...library[existingStoryIdx], ...storyInfo, isOffline: true };
+        if (!offlineStory.chaptersData) offlineStory.chaptersData = [];
+      } else {
+        offlineStory = {
+          ...storyInfo,
+          id: storyInfo.source || storyInfo.id || Date.now().toString(),
+          chaptersData: [],
+          isOffline: true
+        };
+      }
+
+      const startIdx = range ? Math.max(0, range.from - 1) : 0;
+      const endIdx = range ? Math.min(storyInfo.chapters.length, range.to) : storyInfo.chapters.length;
+      const totalToDownload = endIdx - startIdx;
+      
+      cancelRef.current = false;
+      let downloadedCount = 0;
+
+      for (let i = startIdx; i < endIdx; i++) {
         if (cancelRef.current) break;
-        // Kiểm tra xem chương này đã có chưa (để tránh tải lại nếu không cần thiết)
-        // Lưu ý: Chúng ta lưu index tương ứng với storyInfo.chapters
-        const res = await fetch(`${API_URL}/api/scrape?url=${encodeURIComponent(storyInfo.chapters[i].url)}`);
-        const result = await res.json();
+
+        // Cập nhật tiến độ vào hàng đợi
+        setQueue(prev => prev.map(j => j.id === id ? { 
+          ...j, 
+          currentIdx: i + 1, 
+          progress: Math.round((downloadedCount / totalToDownload) * 100) 
+        } : j));
         
-        if (result.success && result.data) {
-          offlineStory.chaptersData[i] = result.data;
-        } else {
-          if (!offlineStory.chaptersData[i]) {
+        try {
+          if (cancelRef.current) break;
+          const res = await fetch(`${API_URL}/api/scrape?url=${encodeURIComponent(storyInfo.chapters[i].url)}`);
+          const result = await res.json();
+          
+          if (result.success && result.data) {
+            offlineStory.chaptersData[i] = result.data;
+          } else if (!offlineStory.chaptersData[i]) {
             offlineStory.chaptersData[i] = { chapterTitle: storyInfo.chapters[i].title, content: 'Chương này lỗi dữ liệu.' };
           }
+        } catch (e) {
+          if (!offlineStory.chaptersData[i]) {
+            offlineStory.chaptersData[i] = { chapterTitle: storyInfo.chapters[i].title, content: 'Lỗi kết nối khi tải.' };
+          }
         }
-      } catch (e) {
-        if (!offlineStory.chaptersData[i]) {
-          offlineStory.chaptersData[i] = { chapterTitle: storyInfo.chapters[i].title, content: 'Lỗi kết nối khi tải.' };
-        }
+        
+        downloadedCount++;
       }
-      
-      downloadedCount++;
-      setProgress(Math.round((downloadedCount / totalToDownload) * 100));
-    }
 
-    // Lưu lại vào thư viện
-    if (existingStoryIdx > -1) {
-      library[existingStoryIdx] = offlineStory;
-    } else {
-      library.push(offlineStory);
-    }
-    
-    await localforage.setItem('library', library);
-    const wasCancelled = cancelRef.current;
-    setDownloadingStory(null);
-    cancelRef.current = false;
+      // Lưu vào thư viện
+      if (existingStoryIdx > -1) library[existingStoryIdx] = offlineStory;
+      else library.push(offlineStory);
+      await localforage.setItem('library', library);
 
-    if (wasCancelled) {
-      sendNotification('Đã dừng tải', `Đã dừng tải truyện: ${storyInfo.title}`);
-    } else {
-      sendNotification('Tải hoàn tất', `Đã hoàn thành tải ${downloadedCount} chương của ${storyInfo.title}`);
+      const wasCancelled = cancelRef.current;
+      if (wasCancelled) sendNotification('Đã dừng tải', `Đã dừng tải truyện: ${storyInfo.title}`);
+      else sendNotification('Tải hoàn tất', `Đã hoàn thành tải ${downloadedCount} chương của ${storyInfo.title}`);
+
+    } catch (err) {
+      console.error("Lỗi khi tải truyện:", err);
+    } finally {
+      // Xóa khỏi hàng đợi sau khi hoàn thành hoặc lỗi/hủy
+      setQueue(prev => prev.filter(j => j.id !== id));
+      cancelRef.current = false;
     }
   };
 
-  const cancelDownload = () => {
-    cancelRef.current = true;
+  const startGlobalDownload = (storyInfo, range = null) => {
+    const isInQueue = queue.some(j => j.storyInfo.title === storyInfo.title);
+    if (isInQueue) return alert('Truyện này đã có trong hàng đợi!');
+
+    const newJob = {
+      id: Date.now().toString(),
+      storyInfo,
+      range,
+      status: 'pending',
+      progress: 0,
+      currentIdx: 0,
+      total: storyInfo.chapters.length
+    };
+    setQueue(prev => [...prev, newJob]);
+  };
+
+  const cancelDownload = (jobId = null) => {
+    const activeJob = queue.find(j => j.status === 'downloading');
+    if (jobId && activeJob && activeJob.id === jobId) {
+      cancelRef.current = true;
+    } else if (!jobId) {
+      cancelRef.current = true;
+    } else {
+      // Nếu xóa truyện đang chờ
+      setQueue(prev => prev.filter(j => j.id !== jobId));
+    }
   };
 
   return (
-    <DownloadContext.Provider value={{ downloadingStory, progress, startGlobalDownload, cancelDownload }}>
+    <DownloadContext.Provider value={{ downloadingStory, progress, queue, startGlobalDownload, cancelDownload }}>
       {children}
     </DownloadContext.Provider>
   );
 };
+

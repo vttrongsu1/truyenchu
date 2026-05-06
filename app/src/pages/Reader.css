@@ -244,7 +244,82 @@
 .mtc-loader { padding: 30px; color: #999; text-align: center; }
 .error-msg { color: #ff4757; margin-top: 12px; font-size: 14px; font-weight: bold; }
 
+/* Download Queue Styles */
+.mtc-queue-card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  margin-top: 20px;
+  text-align: left;
+}
+
+.mtc-queue-card h3 {
+  font-size: 16px;
+  margin-bottom: 15px;
+  color: #444;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.queue-item {
+  background: #f9fbff;
+  padding: 12px 15px;
+  border-radius: 12px;
+  border: 1px solid #edf2f7;
+}
+
+.queue-title {
+  font-weight: bold;
+  font-size: 14px;
+  color: #2d3748;
+  margin-bottom: 4px;
+  max-width: 200px;
+}
+
+.queue-status {
+  font-size: 12px;
+  color: #718096;
+}
+
+.queue-cancel {
+  background: #fff1f1;
+  color: #f56565;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.queue-cancel:active { transform: scale(0.9); background: #fed7d7; }
+
+.queue-progress-bg {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.queue-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3498db, #5dade2);
+  transition: width 0.3s ease;
+}
+
 .chapters-scroll-area {
+
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;

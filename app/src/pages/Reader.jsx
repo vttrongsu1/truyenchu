@@ -13,7 +13,8 @@ console.log("Đang kết nối tới Server tại:", API_URL);
 export default function Reader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { downloadingStory, progress, startGlobalDownload, cancelDownload } = useDownload();
+  const { queue, downloadingStory, progress, startGlobalDownload, cancelDownload } = useDownload();
+
   
   // States
   const [url, setUrl] = useState('');
@@ -352,7 +353,36 @@ export default function Reader() {
               </div>
               {error && <p className="error-msg">{error}</p>}
             </div>
+
+            {queue.length > 0 && (
+              <div className="mtc-queue-card">
+                <h3>Hàng đợi tải truyện ({queue.length})</h3>
+                <div className="queue-list">
+                  {queue.map(job => (
+                    <div key={job.id} className="queue-item">
+                      <div className="queue-info flex-between">
+                        <div className="queue-text">
+                          <p className="queue-title text-truncate">{job.storyInfo.title}</p>
+                          <p className="queue-status">
+                            {job.status === 'downloading' ? `Đang tải: ${job.progress}% (${job.currentIdx}/${job.total})` : 'Đang chờ...'}
+                          </p>
+                        </div>
+                        <button className="queue-cancel" onClick={() => cancelDownload(job.id)}>
+                          <X size={18} />
+                        </button>
+                      </div>
+                      {job.status === 'downloading' && (
+                        <div className="queue-progress-bg">
+                          <div className="queue-progress-fill" style={{width: `${job.progress}%`}}></div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
         )}
 
         {storyInfo && !chapterContent && !loading && (
