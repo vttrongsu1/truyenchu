@@ -4,12 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import localforage from 'localforage';
 import './Home.css';
 
-let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `${window.location.protocol}//${window.location.hostname}:3001` : window.location.origin);
-if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
-
-if (window.location.protocol === 'https:' && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
-  API_URL = API_URL.replace('http://', 'https://');
-}
+let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
+if (API_URL && API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 console.log("Đang kết nối tới Server tại:", API_URL);
 
 export default function Home() {
@@ -144,6 +140,11 @@ export default function Home() {
           )}
         </div>
       </section>
+      
+      <footer style={{textAlign: 'center', padding: '30px 20px', color: '#bbb', fontSize: '11px', borderTop: '1px solid #eee', marginTop: '20px'}}>
+        <p style={{marginBottom: '5px'}}><b>Audiobook Reader PWA</b></p>
+        <p>Phiên bản: <span style={{color: '#ff7e00', fontWeight: 'bold'}}>v1.0.5</span> (Multi-source & Range DL)</p>
+      </footer>
     </div>
   );
 }
