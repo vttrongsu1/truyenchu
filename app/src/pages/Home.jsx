@@ -72,7 +72,7 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="history-section">
+      <section className="history-section animate-fade-in">
         <div className="section-header flex-between">
           <h3 className="flex-center"><History size={20} style={{marginRight: '8px', color: 'var(--primary)'}}/> Tủ Sách Offline</h3>
         </div>
@@ -84,44 +84,48 @@ export default function Home() {
               {library.length === 0 && (
                 <button 
                   onClick={() => navigate('/reader')}
-                  style={{padding: '10px 20px', background: 'var(--primary)', color: 'white', borderRadius: 20, border: 'none', fontWeight: 'bold'}}
+                  style={{padding: '10px 24px', background: 'var(--primary-gradient)', color: 'white', borderRadius: 20, border: 'none', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(255,126,0,0.3)'}}
                 >
                   Đi tới trang Tải Truyện
                 </button>
               )}
             </div>
           ) : (
-            filteredLibrary.map(story => (
-              <div key={story.id} className="history-card" onClick={() => navigate('/reader', { state: { offlineStory: story, showPreview: true } })}>
-                {story.cover ? <img src={story.cover} alt={story.title} className="history-cover" /> : <div className="history-cover" style={{background: '#ddd'}} />}
-                <div className="history-info">
-                  <h4 className="story-title text-truncate">{story.title}</h4>
-                  <p className="story-progress" style={{fontSize: 13, color: 'var(--text-secondary)', marginTop: 4}}>
-                    Đã đọc: Chương {(parseInt(localStorage.getItem(`story_progress_${story.title}`)) || 0) + 1} / {(story.chapters || []).length}
-                  </p>
-                  <div className="history-meta flex-between" style={{marginTop: 12}}>
-                    <span className="flex-center" style={{fontSize: 11, background: '#4caf50', color: 'white', padding: '2px 6px', borderRadius: 4}}>
-                      Đã tải {(story.chaptersData || []).length} chương
-                    </span>
-                    <div style={{display: 'flex', gap: 8}}>
-                      <button className="play-circle-btn" onClick={(e) => deleteStory(e, story.id)} style={{background: 'var(--border-color)', color: 'var(--text-secondary)', boxShadow: 'none'}}>
-                        <Trash2 size={14} />
-                      </button>
-                      <button className="play-circle-btn" onClick={(e) => { 
-                        e.stopPropagation(); 
-                        const lastIdx = parseInt(localStorage.getItem(`story_progress_${story.title}`)) || 0;
-                        navigate('/reader', { state: { offlineStory: story, chapterIndex: lastIdx } }); 
-                      }}>
-                        <Play size={14} fill="white" className="play-icon-adjust" />
-                      </button>
+            filteredLibrary.map(story => {
+              const isLastPlayed = localStorage.getItem('last_played_story_title') === story.title;
+              return (
+                <div key={story.id} className={`history-card ${isLastPlayed ? 'active-reading' : ''}`} onClick={() => navigate('/reader', { state: { offlineStory: story, showPreview: true } })}>
+                  {story.cover ? <img src={story.cover} alt={story.title} className="history-cover" /> : <div className="history-cover" style={{background: '#ddd'}} />}
+                  <div className="history-info">
+                    <h4 className="story-title text-truncate">{story.title}</h4>
+                    <p className="story-progress" style={{fontSize: 13, color: 'var(--text-secondary)', marginTop: 4}}>
+                      Đã đọc: Chương {(parseInt(localStorage.getItem(`story_progress_${story.title}`)) || 0) + 1} / {(story.chapters || []).length}
+                    </p>
+                    <div className="history-meta flex-between" style={{marginTop: 12}}>
+                      <span className="flex-center" style={{fontSize: 11, background: '#4caf50', color: 'white', padding: '2px 8px', borderRadius: 6, fontWeight: 600}}>
+                        Đã tải {(story.chaptersData || []).length} chương
+                      </span>
+                      <div style={{display: 'flex', gap: 10}}>
+                        <button className="play-circle-btn" onClick={(e) => deleteStory(e, story.id)} style={{background: '#f1f5f9', color: '#94a3b8', boxShadow: 'none', width: 34, height: 34}}>
+                          <Trash2 size={14} />
+                        </button>
+                        <button className="play-circle-btn" onClick={(e) => { 
+                          e.stopPropagation(); 
+                          const lastIdx = parseInt(localStorage.getItem(`story_progress_${story.title}`)) || 0;
+                          navigate('/reader', { state: { offlineStory: story, chapterIndex: lastIdx } }); 
+                        }}>
+                          <Play size={14} fill="white" className="play-icon-adjust" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </section>
+
       
       <footer style={{textAlign: 'center', padding: '30px 20px', color: '#bbb', fontSize: '11px', borderTop: '1px solid #eee', marginTop: '20px'}}>
         <p style={{marginBottom: '5px'}}><b>Audiobook Reader PWA</b></p>

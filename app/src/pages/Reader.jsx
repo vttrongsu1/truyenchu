@@ -398,7 +398,8 @@ export default function Reader() {
               <button className="preview-btn-start" onClick={() => loadChapter(parseInt(localStorage.getItem(`story_progress_${storyInfo.title}`)) || 0)} style={{flex: 2}}>
                 {localStorage.getItem(`story_progress_${storyInfo.title}`) ? 'Tiếp tục đọc' : 'Bắt đầu đọc'}
               </button>
-              <button className="preview-btn-download" onClick={() => {
+              <button className={`preview-btn-download ${downloadingStory?.title === storyInfo.title ? 'is-downloading' : ''}`} onClick={() => {
+
                 if (downloadingStory?.title === storyInfo.title) {
                   cancelDownload();
                 } else {
@@ -423,11 +424,12 @@ export default function Reader() {
         )}
 
         {loading && (
-          <div className="reader-loading" style={{textAlign:'center', padding:'50px 20px'}}>
-            <Loader className="spin" size={40} />
-            <p>Đang tải chương...</p>
+          <div className="mtc-loader">
+            <div className="modern-spinner"></div>
+            <p>Đang tải dữ liệu...</p>
           </div>
         )}
+
 
         {!loading && !chapterContent && storyInfo && (
           <div className="reader-empty" style={{textAlign:'center', padding:'50px 20px'}}>
