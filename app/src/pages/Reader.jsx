@@ -5,19 +5,15 @@ import localforage from 'localforage';
 import { useDownload } from '../context/DownloadContext';
 import './Reader.css';
 
-let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `${window.location.protocol}//${window.location.hostname}:3001` : window.location.origin);
-if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
-
-if (window.location.protocol === 'https:' && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
-  API_URL = API_URL.replace('http://', 'https://');
-}
+let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
+if (API_URL && API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 
 console.log("Đang kết nối tới Server tại:", API_URL);
 
 export default function Reader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { downloadingStory, progress, startGlobalDownload } = useDownload();
+  const { downloadingStory, progress, startGlobalDownload, cancelDownload } = useDownload();
   
   // States
   const [url, setUrl] = useState('');
@@ -26,6 +22,9 @@ export default function Reader() {
   const [storyInfo, setStoryInfo] = useState(location.state?.offlineStory || null);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(location.state?.chapterIndex || 0);
   const [chapterContent, setChapterContent] = useState(null);
+  const [downloadRange, setDownloadRange] = useState({ from: 1, to: 50 });
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
 
   // TTS States
   const [isPlaying, setIsPlaying] = useState(false);
@@ -365,10 +364,21 @@ export default function Reader() {
               <button className="preview-btn-start" onClick={() => loadChapter(parseInt(localStorage.getItem(`story_progress_${storyInfo.title}`)) || 0)} style={{flex: 2}}>
                 {localStorage.getItem(`story_progress_${storyInfo.title}`) ? 'Tiếp tục đọc' : 'Bắt đầu đọc'}
               </button>
-              <button className="preview-btn-download" onClick={() => startGlobalDownload(storyInfo)} style={{flex: 1}}>
-                {downloadingStory?.title === storyInfo.title ? `${progress}%` : (storyInfo.isOffline ? 'Đã tải' : 'Tải máy')}
+              <button className="preview-btn-download" onClick={() => {
+                if (downloadingStory?.title === storyInfo.title) {
+                  cancelDownload();
+                } else {
+                  // Mặc định là tải từ 1 đến hết
+                  setDownloadRange({ from: 1, to: storyInfo.chapters.length });
+                  setShowDownloadModal(true);
+                }
+              }} style={{flex: 1, background: downloadingStory?.title === storyInfo.title ? '#ff4444' : ''}}>
+                {downloadingStory?.title === storyInfo.title ? `Hủy (${progress}%)` : (storyInfo.isOffline ? 'Tải lại' : 'Tải máy')}
               </button>
+
             </div>
+            
+
             <div className="preview-chapters">
               <h3>Danh sách chương ({storyInfo.chapters.length})</h3>
               <div className="chapters-scroll-area">
@@ -449,7 +459,51 @@ export default function Reader() {
         </div>
       )}
 
+      {showDownloadModal && (
+        <div className="mtc-sheet-overlay overlay-bottom" onClick={() => setShowDownloadModal(false)}>
+          <div className="mtc-sheet" onClick={e => e.stopPropagation()}>
+            <div className="sheet-handle"></div>
+            <h3 style={{textAlign:'center', marginBottom:20}}>Chọn khoảng chương tải</h3>
+            
+            <div className="sheet-group">
+              <label>Từ chương:</label>
+              <input 
+                type="number" 
+                className="sheet-input" 
+                value={downloadRange.from} 
+                onChange={e => setDownloadRange(prev => ({ ...prev, from: Math.max(1, parseInt(e.target.value) || 1) }))}
+                style={{width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #eee'}}
+              />
+            </div>
+
+            <div className="sheet-group">
+              <label>Đến chương:</label>
+              <input 
+                type="number" 
+                className="sheet-input" 
+                value={downloadRange.to} 
+                onChange={e => setDownloadRange(prev => ({ ...prev, to: Math.min(storyInfo.chapters.length, parseInt(e.target.value) || storyInfo.chapters.length) }))}
+                style={{width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #eee'}}
+              />
+            </div>
+
+            <div className="flex-gap" style={{marginTop: 20}}>
+              <button className="sheet-btn" style={{flex: 1}} onClick={() => {
+                setDownloadRange({ from: 1, to: storyInfo.chapters.length });
+              }}>Tải tất cả</button>
+              <button className="sheet-btn" style={{flex: 1, background: '#ff7e00', color: '#fff', border: 'none'}} onClick={() => {
+                startGlobalDownload(storyInfo, downloadRange);
+                setShowDownloadModal(false);
+              }}>Tải ngay</button>
+            </div>
+            
+            <button className="sheet-btn" style={{width: '100%', marginTop: 15, background: '#f5f5f5', border: 'none'}} onClick={() => setShowDownloadModal(false)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
       {showSettings && (
+
         <div className="mtc-sheet-overlay overlay-bottom" onClick={() => setShowSettings(false)}>
           <div className="mtc-sheet" onClick={e => e.stopPropagation()}>
             <div className="sheet-handle"></div>

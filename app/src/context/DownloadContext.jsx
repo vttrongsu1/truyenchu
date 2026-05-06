@@ -1,12 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import localforage from 'localforage';
 
-let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `${window.location.protocol}//${window.location.hostname}:3001` : window.location.origin);
-if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
-
-if (window.location.protocol === 'https:' && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
-  API_URL = API_URL.replace('http://', 'https://');
-}
+let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
+if (API_URL && API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 
 const DownloadContext = createContext();
 
@@ -15,6 +11,7 @@ export const useDownload = () => useContext(DownloadContext);
 export const DownloadProvider = ({ children }) => {
   const [downloadingStory, setDownloadingStory] = useState(null);
   const [progress, setProgress] = useState(0);
+  const cancelRef = useRef(false);
 
   useEffect(() => {
     if ("Notification" in window) {
@@ -28,56 +25,94 @@ export const DownloadProvider = ({ children }) => {
     }
   };
 
-  const startGlobalDownload = async (storyInfo) => {
+  const startGlobalDownload = async (storyInfo, range = null) => {
     if (downloadingStory) return alert('Đang có truyện khác đang tải!');
     
     setDownloadingStory(storyInfo);
     setProgress(0);
     sendNotification('Bắt đầu tải', `Đang tải truyện: ${storyInfo.title}`);
 
-    // Khởi tạo bộ truyện offline mới, xóa sạch dữ liệu cũ để tránh cộng dồn
-    const offlineStory = {
-      ...storyInfo,
-      id: storyInfo.source || storyInfo.id || Date.now().toString(),
-      chaptersData: [],
-      isOffline: true
-    };
-
-    const total = storyInfo.chapters.length;
-    for (let i = 0; i < total; i++) {
-      setDownloadingStory({ ...storyInfo, currentIdx: i + 1, total });
-      try {
-        const res = await fetch(`${API_URL}/api/scrape?url=${encodeURIComponent(storyInfo.chapters[i].url)}`);
-        const result = await res.json();
-        if (result.success && result.data) {
-          offlineStory.chaptersData.push(result.data);
-        } else {
-          offlineStory.chaptersData.push({ chapterTitle: storyInfo.chapters[i].title, content: 'Chương này lỗi dữ liệu.' });
-        }
-      } catch (e) {
-        offlineStory.chaptersData.push({ chapterTitle: storyInfo.chapters[i].title, content: 'Lỗi kết nối khi tải.' });
-      }
-      setProgress(Math.round(((i + 1) / total) * 100));
+    // Lấy truyện cũ từ thư viện nếu có để tải bổ sung
+    const library = await localforage.getItem('library') || [];
+    const storyKey = storyInfo.source || storyInfo.title;
+    const existingStoryIdx = library.findIndex(s => (s.source === storyKey || s.title === storyKey));
+    
+    let offlineStory;
+    if (existingStoryIdx > -1) {
+      offlineStory = { ...library[existingStoryIdx], ...storyInfo, isOffline: true };
+      if (!offlineStory.chaptersData) offlineStory.chaptersData = [];
+    } else {
+      offlineStory = {
+        ...storyInfo,
+        id: storyInfo.source || storyInfo.id || Date.now().toString(),
+        chaptersData: [],
+        isOffline: true
+      };
     }
 
-    // Lưu vào thư viện
-    const library = await localforage.getItem('library') || [];
-    const storyKey = offlineStory.source || offlineStory.title;
-    const idx = library.findIndex(s => (s.source === storyKey || s.title === storyKey));
+    const startIdx = range ? Math.max(0, range.from - 1) : 0;
+    const endIdx = range ? Math.min(storyInfo.chapters.length, range.to) : storyInfo.chapters.length;
+    const totalToDownload = endIdx - startIdx;
     
-    if (idx > -1) {
-      library[idx] = offlineStory;
+    cancelRef.current = false;
+    let downloadedCount = 0;
+
+    for (let i = startIdx; i < endIdx; i++) {
+      if (cancelRef.current) break;
+      // ...
+
+      // Cập nhật trạng thái hiển thị
+      setDownloadingStory({ ...storyInfo, currentIdx: i + 1, total: storyInfo.chapters.length });
+      
+      try {
+        if (cancelRef.current) break;
+        // Kiểm tra xem chương này đã có chưa (để tránh tải lại nếu không cần thiết)
+        // Lưu ý: Chúng ta lưu index tương ứng với storyInfo.chapters
+        const res = await fetch(`${API_URL}/api/scrape?url=${encodeURIComponent(storyInfo.chapters[i].url)}`);
+        const result = await res.json();
+        
+        if (result.success && result.data) {
+          offlineStory.chaptersData[i] = result.data;
+        } else {
+          if (!offlineStory.chaptersData[i]) {
+            offlineStory.chaptersData[i] = { chapterTitle: storyInfo.chapters[i].title, content: 'Chương này lỗi dữ liệu.' };
+          }
+        }
+      } catch (e) {
+        if (!offlineStory.chaptersData[i]) {
+          offlineStory.chaptersData[i] = { chapterTitle: storyInfo.chapters[i].title, content: 'Lỗi kết nối khi tải.' };
+        }
+      }
+      
+      downloadedCount++;
+      setProgress(Math.round((downloadedCount / totalToDownload) * 100));
+    }
+
+    // Lưu lại vào thư viện
+    if (existingStoryIdx > -1) {
+      library[existingStoryIdx] = offlineStory;
     } else {
       library.push(offlineStory);
     }
     
     await localforage.setItem('library', library);
+    const wasCancelled = cancelRef.current;
     setDownloadingStory(null);
-    sendNotification('Tải hoàn tất', `Đã tải xong ${offlineStory.chaptersData.length} chương của ${storyInfo.title}`);
+    cancelRef.current = false;
+
+    if (wasCancelled) {
+      sendNotification('Đã dừng tải', `Đã dừng tải truyện: ${storyInfo.title}`);
+    } else {
+      sendNotification('Tải hoàn tất', `Đã hoàn thành tải ${downloadedCount} chương của ${storyInfo.title}`);
+    }
+  };
+
+  const cancelDownload = () => {
+    cancelRef.current = true;
   };
 
   return (
-    <DownloadContext.Provider value={{ downloadingStory, progress, startGlobalDownload }}>
+    <DownloadContext.Provider value={{ downloadingStory, progress, startGlobalDownload, cancelDownload }}>
       {children}
     </DownloadContext.Provider>
   );
