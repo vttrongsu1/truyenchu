@@ -353,10 +353,9 @@ export default function Reader() {
               </div>
               {error && <p className="error-msg">{error}</p>}
             </div>
-
-            )}
           </div>
         )}
+
 
         {/* Hàng đợi tải truyện - Hiển thị ở cả chế độ tìm kiếm và xem trước */}
         {queue.length > 0 && !chapterContent && (
