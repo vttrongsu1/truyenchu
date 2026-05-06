@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const path = require('path');
 
 const app = express();
 
@@ -176,6 +177,15 @@ app.get('/api/story', async (req, res) => {
     console.error('Lỗi khi scrape truyện:', error.message);
     res.status(500).json({ error: 'Không thể cào thông tin truyện từ URL này.', details: error.message });
   }
+});
+
+// Serve static files from the React frontend app
+const frontendPath = path.join(__dirname, '../app/dist');
+app.use(express.static(frontendPath));
+
+// Any route that doesn't match an API route will serve the React index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 app.listen(PORT, () => {

@@ -5,7 +5,7 @@ import localforage from 'localforage';
 import { useDownload } from '../context/DownloadContext';
 import './Reader.css';
 
-let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`;
+let API_URL = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `${window.location.protocol}//${window.location.hostname}:3001` : window.location.origin);
 if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 
 if (window.location.protocol === 'https:' && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
